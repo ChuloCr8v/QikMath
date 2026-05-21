@@ -1,0 +1,42 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "avatarSeed": { "type": "string" },
+        "personalBest": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "avatarSeed"]
+    },
+    "Score": {
+      "title": "Score",
+      "description": "Information about a completed game session",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "score": { "type": "number" },
+        "difficulty": { "type": "string", "enum": ["EASY", "NORMAL", "HARD"] },
+        "accuracy": { "type": "number" },
+        "timestamp": { "type": "number" },
+        "avatarSeed": { "type": "string" }
+      },
+      "required": ["name", "score", "difficulty", "accuracy", "timestamp", "avatarSeed"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User document keyed by UID"
+    },
+    "/scores/{scoreId}": {
+      "schema": "Score",
+      "description": "Global list of scores"
+    }
+  }
+}

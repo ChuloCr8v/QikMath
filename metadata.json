@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Quick Math for kids",
+  "description": "A high-performance, visually stunning 30-second timed arithmetic challenge with streak-based scoring.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
