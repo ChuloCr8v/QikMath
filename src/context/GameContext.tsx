@@ -128,7 +128,13 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Persistence
   const [leaderboard, setLeaderboard] = useState<ScoreEntry[]>([]);
-  const [personalBest, setPersonalBest] = useState(() => Number(localStorage.getItem('qm_pb')) || 0);
+  const [personalBestInternal, setPersonalBestInternal] = useState(() => Number(localStorage.getItem('qm_pb')) || 0);
+  const [personalBests, setPersonalBests] = useState<Record<Difficulty, number>>(() => ({
+    EASY: Number(localStorage.getItem('qm_pb_EASY')) || Number(localStorage.getItem('qm_pb')) || 0,
+    NORMAL: Number(localStorage.getItem('qm_pb_NORMAL')) || Number(localStorage.getItem('qm_pb')) || 0,
+    HARD: Number(localStorage.getItem('qm_pb_HARD')) || Number(localStorage.getItem('qm_pb')) || 0,
+  }));
+  const personalBest = personalBests[difficulty];
   const [history, setHistory] = useState<ScoreEntry[]>([]);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -152,17 +158,31 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const data = userDoc.data();
             if (data.displayName && !playerName) setPlayerName(data.displayName);
             if (data.avatarSeed) setPlayerAvatarSeed(data.avatarSeed);
-            if (data.personalBest && data.personalBest > personalBest) {
-              setPersonalBest(data.personalBest);
-              localStorage.setItem('qm_pb', data.personalBest.toString());
-            }
+            
+            const cloudBests = data.personalBests || {};
+            setPersonalBests(prev => {
+              const updated = {
+                EASY: Math.max(prev.EASY, cloudBests.EASY || 0, data.personalBest || 0),
+                NORMAL: Math.max(prev.NORMAL, cloudBests.NORMAL || 0, data.personalBest || 0),
+                HARD: Math.max(prev.HARD, cloudBests.HARD || 0, data.personalBest || 0),
+              };
+              localStorage.setItem('qm_pb_EASY', updated.EASY.toString());
+              localStorage.setItem('qm_pb_NORMAL', updated.NORMAL.toString());
+              localStorage.setItem('qm_pb_HARD', updated.HARD.toString());
+              
+              const overallBest = Math.max(updated.EASY, updated.NORMAL, updated.HARD);
+              setPersonalBestInternal(overallBest);
+              localStorage.setItem('qm_pb', overallBest.toString());
+              return updated;
+            });
           } else {
             // Initialize user doc
             await setDoc(doc(db, 'users', user.uid), {
               uid: user.uid,
               displayName: playerName || user.displayName || 'Player',
               avatarSeed: playerAvatarSeed,
-              personalBest: personalBest,
+              personalBest: personalBestInternal,
+              personalBests: personalBests,
               updatedAt: serverTimestamp()
             });
           }
@@ -173,7 +193,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthLoading(false);
     });
     return () => unsubscribe();
-  }, [personalBest, playerName, playerAvatarSeed]);
+  }, [personalBests, playerName, playerAvatarSeed]);
 
   // Save current score if user logs in on results screen
   useEffect(() => {
@@ -202,18 +222,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       // Update personal best
-      const newPb = Math.max(personalBest, finalScore);
-      setPersonalBest(newPb);
-      localStorage.setItem('qm_pb', newPb.toString());
+      const newPbForDiff = Math.max(personalBests[difficulty] || 0, finalScore);
+      let updatedBests: Record<Difficulty, number> = { ...personalBests };
+      setPersonalBests(prev => {
+        const updated = { ...prev, [difficulty]: newPbForDiff };
+        updatedBests = updated;
+        localStorage.setItem(`qm_pb_${difficulty}`, newPbForDiff.toString());
+        const overall = Math.max(updated.EASY, updated.NORMAL, updated.HARD);
+        setPersonalBestInternal(overall);
+        localStorage.setItem('qm_pb', overall.toString());
+        return updated;
+      });
 
       // Save Score to Cloud
       const syncCloudScore = async () => {
         try {
+          const overallBest = Math.max(Number(localStorage.getItem('qm_pb')) || 0, finalScore);
           await setDoc(doc(db, 'users', user.uid), {
             uid: user.uid,
             displayName: playerName || user.displayName || 'Player',
             avatarSeed: playerAvatarSeed,
-            personalBest: newPb,
+            personalBest: overallBest,
+            personalBests: updatedBests,
             updatedAt: serverTimestamp()
           }, { merge: true });
 
@@ -235,7 +265,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       syncCloudScore();
     }
-  }, [user, gameState, score, totalAttempts, correctAnswers, difficulty, playerAvatarSeed, playerName, level, history, personalBest]);
+  }, [user, gameState, score, totalAttempts, correctAnswers, difficulty, playerAvatarSeed, playerName, level, history, personalBests]);
 
   // Leaderboard listener
   useEffect(() => {
@@ -245,7 +275,10 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const seen = new Set<string>();
       const deduplicated: ScoreEntry[] = [];
       for (const entry of scores) {
-        const key = entry.userId ? `id_${entry.userId}` : `name_${entry.name.trim().toLowerCase()}`;
+        const difficultySuffix = entry.difficulty ? `_${entry.difficulty}` : '_NORMAL';
+        const key = entry.userId 
+          ? `id_${entry.userId}${difficultySuffix}` 
+          : `name_${entry.name.trim().toLowerCase()}${difficultySuffix}`;
         if (!seen.has(key)) {
           seen.add(key);
           deduplicated.push(entry);
@@ -271,8 +304,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await firebaseLogout();
       setHistory([]);
       localStorage.removeItem('qm_history');
-      setPersonalBest(0);
+      setPersonalBests({ EASY: 0, NORMAL: 0, HARD: 0 });
+      setPersonalBestInternal(0);
       localStorage.removeItem('qm_pb');
+      localStorage.removeItem('qm_pb_EASY');
+      localStorage.removeItem('qm_pb_NORMAL');
+      localStorage.removeItem('qm_pb_HARD');
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -586,21 +623,30 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('qm_history', JSON.stringify(newHistory));
 
       // Update Personal Best
-      if (finalScore > personalBest) {
-        setPersonalBest(finalScore);
-        localStorage.setItem('qm_pb', finalScore.toString());
-        
-        try {
-          await setDoc(doc(db, 'users', user.uid), {
-            uid: user.uid,
-            displayName: playerName || user.displayName || 'Player',
-            avatarSeed: playerAvatarSeed,
-            personalBest: finalScore,
-            updatedAt: serverTimestamp()
-          });
-        } catch (e) {
-          handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}`);
-        }
+      const newPbForDiff = Math.max(personalBests[difficulty] || 0, finalScore);
+      let updatedBests: Record<Difficulty, number> = { ...personalBests };
+      setPersonalBests(prev => {
+        const updated = { ...prev, [difficulty]: newPbForDiff };
+        updatedBests = updated;
+        localStorage.setItem(`qm_pb_${difficulty}`, newPbForDiff.toString());
+        const overall = Math.max(updated.EASY, updated.NORMAL, updated.HARD);
+        setPersonalBestInternal(overall);
+        localStorage.setItem('qm_pb', overall.toString());
+        return updated;
+      });
+
+      try {
+        const overallBest = Math.max(Number(localStorage.getItem('qm_pb')) || 0, finalScore);
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          displayName: playerName || user.displayName || 'Player',
+          avatarSeed: playerAvatarSeed,
+          personalBest: overallBest,
+          personalBests: updatedBests,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+      } catch (e) {
+        handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}`);
       }
 
       // Save Score to Cloud (Only for authenticated users)
