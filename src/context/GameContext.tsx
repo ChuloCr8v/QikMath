@@ -93,7 +93,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [gameState, setGameState] = useState<GameState>('MENU');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('qm_theme') as 'light' | 'dark') || 'dark');
+  //const [theme, setTheme] = useState<'light' | 'dark'>(() => (localStorage.getItem('qm_theme') as 'light' | 'dark') || 'dark');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   
   // Auth
   const [user, setUser] = useState<User | null>(null);

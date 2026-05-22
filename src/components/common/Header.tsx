@@ -19,7 +19,7 @@ export const Header = () => {
   if (gameState === 'PLAYING') return null;
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 relative pt-6 pb-2 z-50">
+    <div className="w-full fixed top-0 max-w-4xl mx-auto px-4 relative pt-6 pb-2 z-50">
       <motion.header
         animate={{ 
           y: [-1, 1, -1]

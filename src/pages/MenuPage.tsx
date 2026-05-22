@@ -47,7 +47,7 @@ export const MenuPage = () => {
               onClick={() => { setShowRulesModal(true); sounds.tap(); }}
               className="mt-2 inline-flex items-center gap-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 hover:text-yellow-800 px-3 py-0.5 rounded-full text-[9px] font-bold tracking-wide transition-all cursor-pointer shadow-[0_2px_0px_#ca8a04] hover:scale-[1.02] active:translate-y-[2px] active:shadow-none select-none"
             >
-              📖 HOW TO PLAY & SCORING RULES
+              📖 HOW TO PLAY 
             </button>
           </div>
   
@@ -245,7 +245,7 @@ export const MenuPage = () => {
                       )
                     ) : (
                       <div className="text-center py-8 text-xs text-slate-400 animate-pulse font-medium">
-                        Downloading cloud data... ✨
+                        Building Champions... ✨
                       </div>
                     )}
                   </div>
@@ -335,7 +335,7 @@ export const MenuPage = () => {
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 20 }}
-              className="w-full max-w-lg bg-white rounded-3xl border-4 border-amber-300 shadow-[0_12px_0px_#fecf33] overflow-hidden flex flex-col max-h-[90vh]"
+              className="w-full max-w-lg bg-white rounded-3xl border-4 border-amber-300 shadow-[0_12px_0px_#fecf33] overflow-hidden flex flex-col max-h-[70vh]"
             >
               {/* Bubbly Modal Header */}
               <div className="bg-amber-100 border-b-2 border-amber-200 px-5 py-4 flex items-center justify-between shrink-0">

@@ -34,7 +34,7 @@ export const SettingsPanel = () => {
 
             <div className="space-y-5">
               {/* Theme Toggle */}
-              <div className="flex items-center justify-between">
+            {  /***<div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   {theme === 'light' ? <Sun className="text-amber-400" /> : <Moon className="text-sky-400" />}
                   <span className="text-xs font-bold text-slate-600">Screen Mode</span>
@@ -45,7 +45,7 @@ export const SettingsPanel = () => {
                 >
                   {theme === 'light' ? '🌞 Daylight' : '🌙 Nightlight'}
                 </button>
-              </div>
+              </div> **/}
 
               {/* Volume sliders */}
               <div className="space-y-3">

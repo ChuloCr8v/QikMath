@@ -48,7 +48,7 @@ export const GamePage = () => {
         )}
       </AnimatePresence>
   
-      <div className="flex-1 w-full max-w-2xl flex flex-col items-center justify-center my-auto py-4">
+      <div className="flex-1 w-full max-w-2xl flex flex-col items-center justify-center my-auto pb-4">
         <ProblemCard />
   
         {/* Streak Progress */}
